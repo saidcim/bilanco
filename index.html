@@ -152,10 +152,10 @@
       <p>Gelir ve giderlerinizi girin — her şey anlık hesaplanır.</p>
     </div>
     <div class="dollar-ticker">
-      <div class="ticker-label">💵 USD / TRY Güncel Kur</div>
-      <div class="ticker-rate" id="usd-rate">…</div>
+      <div class="ticker-label">💵 USD / TRY Kur</div>
+      <input type="number" id="usd-rate" step="0.01" style="background:transparent; border:none; color:var(--gold); font-family:'Playfair Display',serif; font-size:24px; font-weight:900; text-align:center; width:100px; outline:none;">
       <div class="ticker-change" id="usd-change"></div>
-      <div class="ticker-sub" id="usd-date">Yükleniyor…</div>
+      <div class="ticker-sub" id="usd-date">Sabitlendi</div>
     </div>
   </div>
 </header>
@@ -169,6 +169,10 @@
       <div class="income-input-wrap">
         <span class="currency">₺</span>
         <input type="number" id="income" value="30000" min="0" step="500">
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-top:6px; display:flex; align-items:center; gap:6px;">
+        <span>USD Karşılığı:</span>
+        <span id="income-usd" style="color:var(--gold-light); font-weight:700;">$0</span>
       </div>
     </div>
 
@@ -307,6 +311,7 @@
       <div class="balance-display">
         <div class="balance-label">Net Bakiye</div>
         <div class="balance-amount zero" id="balance-amount">₺0</div>
+        <div id="balance-usd" style="font-size:14px; font-weight:700; margin-bottom:4px; opacity:0.8;">$0</div>
         <div class="balance-note" id="balance-note">—</div>
       </div>
     </div>
@@ -335,13 +340,19 @@
         <div class="summary-card-title">✈️ Tatil Hesabı</div>
         <div class="summary-card-sub">Net bakiye ile kaç gün tatil?</div>
       </div>
+      <div style="padding:12px 12px 0;">
+        <div class="row-input-wrap" style="width:100%; justify-content:space-between; margin-bottom:10px;">
+          <span style="font-size:11px; color:var(--text-muted);">Tatile Gidecek Kişi Sayısı</span>
+          <input type="number" id="vac-people" value="1" min="1" style="width:40px;">
+        </div>
+      </div>
       <div class="vacation-grid">
         <div class="vac-card">
           <div class="vac-flag">🇮🇹</div>
           <div class="vac-name">İtalya (Roma)</div>
           <div class="vac-days" id="italy-days">—</div>
           <div class="vac-days-label">gün</div>
-          <div class="vac-cost" id="italy-cost-label">~₺3.200/gün</div>
+          <div class="vac-cost" id="italy-cost-label">~₺0/gün</div>
         </div>
         <div class="vac-card">
           <div class="vac-flag">🇦🇫</div>
@@ -362,8 +373,6 @@
       </div>
       <div class="car-wrap">
         <div class="car-grid">
-          <div class="car-item"><div class="car-name">Dacia Sandero</div><div class="car-months" id="car1-months">—</div><div class="car-months-label">ay</div><div class="car-price">~₺1.100.000</div></div>
-          <div class="car-item"><div class="car-name">Renault Clio</div><div class="car-months" id="car2-months">—</div><div class="car-months-label">ay</div><div class="car-price">~₺1.500.000</div></div>
           <div class="car-item"><div class="car-name">Toyota Corolla</div><div class="car-months" id="car3-months">—</div><div class="car-months-label">ay</div><div class="car-price">~₺2.200.000</div></div>
           <div class="car-item"><div class="car-name">BMW 3 Serisi</div><div class="car-months" id="car4-months">—</div><div class="car-months-label">ay</div><div class="car-price">~₺5.500.000</div></div>
         </div>
@@ -380,7 +389,6 @@
       <div class="hb-grid">
         <div class="hb-card"><div class="hb-emoji">🏪</div><div class="hb-title">Big Mac</div><div class="hb-val" id="hb-bigmac">—</div><div class="hb-sub">~₺180/adet</div></div>
         <div class="hb-card"><div class="hb-emoji">👑</div><div class="hb-title">Burger King</div><div class="hb-val" id="hb-bk">—</div><div class="hb-sub">~₺200/adet</div></div>
-        <div class="hb-card full"><div class="hb-emoji">🥩</div><div class="hb-title">Kasap Gurme Burger</div><div class="hb-val" id="hb-local">—</div><div class="hb-sub">~₺280/adet</div></div>
       </div>
     </div>
 
@@ -448,16 +456,19 @@ function drawDonut(cats,total){
 function updateFun(balance){
   const b=Math.max(0,balance);
   // Vacation
-  const italyDaily=Math.round(100*usdRate); // ~$100/day
-  document.getElementById('italy-cost-label').textContent=`~${fmt(italyDaily)}/gün`;
-  document.getElementById('italy-days').textContent=b>0?Math.floor(b/italyDaily):'—';
-  document.getElementById('afghan-days').textContent=b>0?Math.floor(b/450):'—';
+  const vPeople = parseFloat(document.getElementById('vac-people').value)||1;
+  const italyDaily = Math.round(100 * usdRate); // $100 per person
+  const afghanDaily = 450; // 450 TL per person
+
+  document.getElementById('italy-cost-label').textContent = `~${fmt(italyDaily)}/kişi`;
+  document.getElementById('italy-days').textContent = (b > 0) ? Math.floor(b / (italyDaily * vPeople)) : '—';
+  document.getElementById('afghan-days').textContent = (b > 0) ? Math.floor(b / (afghanDaily * vPeople)) : '—';
   // Cars
-  [{id:'car1',p:1100000},{id:'car2',p:1500000},{id:'car3',p:2200000},{id:'car4',p:5500000}].forEach(c=>{
+  [{id:'car3',p:2200000},{id:'car4',p:5500000}].forEach(c=>{
     document.getElementById(c.id+'-months').textContent=b>0?Math.ceil(c.p/b):'∞';
   });
   // Burgers
-  [{id:'hb-bigmac',p:180},{id:'hb-bk',p:200},{id:'hb-local',p:280}].forEach(h=>{
+  [{id:'hb-bigmac',p:180},{id:'hb-bk',p:200}].forEach(h=>{
     document.getElementById(h.id).textContent=b>0?Math.floor(b/h.p).toLocaleString('tr-TR')+' 🍔':'—';
   });
 }
@@ -465,6 +476,15 @@ function updateFun(balance){
 function update(){
   const income=getIncome(), fixed=getFixed(), variable=getVar(), total=fixed+variable, balance=income-total;
   const pct=income>0?Math.min((total/income)*100,100):0;
+
+  // USD calculations
+  const incUsd = usdRate>0 ? income/usdRate : 0;
+  document.getElementById('income-usd').textContent = '$' + incUsd.toLocaleString('en-US', {maximumFractionDigits:2});
+  const balUsd = usdRate>0 ? balance/usdRate : 0;
+  const balUsdEl = document.getElementById('balance-usd');
+  balUsdEl.textContent = '$' + Math.abs(balUsd).toLocaleString('en-US', {maximumFractionDigits:2});
+  balUsdEl.style.color = balance>0 ? 'var(--green-light)' : balance<0 ? 'var(--red-light)' : 'var(--gold-light)';
+
   document.getElementById('fixed-total').textContent=fmt(fixed);
   document.getElementById('variable-total').textContent=fmt(variable);
   document.getElementById('s-income').textContent=fmt(income);
@@ -496,7 +516,7 @@ const cps=document.getElementById('child-per-slider'),cpv=document.getElementByI
 cps.addEventListener('input',()=>{ cpv.textContent=fmt(cps.value); ctd.textContent=fmt(cps.value*childCount); update(); });
 document.getElementById('child-plus').addEventListener('click',()=>{ childCount=Math.min(childCount+1,10); document.getElementById('child-count').textContent=childCount; document.getElementById('child-expense-wrap').style.display=childCount>0?'block':'none'; cpv.textContent=fmt(cps.value); ctd.textContent=fmt(cps.value*childCount); update(); });
 document.getElementById('child-minus').addEventListener('click',()=>{ childCount=Math.max(childCount-1,0); document.getElementById('child-count').textContent=childCount; document.getElementById('child-expense-wrap').style.display=childCount>0?'block':'none'; ctd.textContent=fmt(cps.value*childCount); update(); });
-document.querySelectorAll('.fixed-item,#income').forEach(i=>i.addEventListener('input',update));
+document.querySelectorAll('.fixed-item,#income,#vac-people').forEach(i=>i.addEventListener('input',update));
 
 // USD
 async function loadUSD(){
@@ -505,33 +525,32 @@ async function loadUSD(){
     const data=await res.json();
     if(data?.rates?.TRY){
       usdRate=data.rates.TRY;
-      document.getElementById('usd-rate').textContent=usdRate.toFixed(2);
+      const el = document.getElementById('usd-rate');
+      el.value = usdRate.toFixed(2);
       const d=new Date(data.time_last_update_utc);
       document.getElementById('usd-date').textContent='Güncelleme: '+d.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
       update();
     }
-  }catch(e){ document.getElementById('usd-rate').textContent='~38.5'; document.getElementById('usd-date').textContent='Tahmini değer'; }
+  }catch(e){
+    usdRate = 45.37;
+    document.getElementById('usd-rate').value = usdRate;
+    document.getElementById('usd-date').textContent='Tahmini (Mayıs 26)';
+  }
+
+  const el = document.getElementById('usd-rate');
+  el.addEventListener('input', () => {
+    usdRate = parseFloat(el.value) || 0;
+    update();
+    buildChart();
+  });
   buildChart();
 }
 
 function buildChart(){
-  // Approximate 12-month USD/TRY trajectory ending near current rate
-  const now=new Date();
-  const labels=[], base=usdRate;
-  // Build smooth curve ending at current rate
-  const startRate=base*0.84; // ~16% lower 12 months ago (reasonable TRY depreciation)
-  const pts=[];
-  for(let i=0;i<12;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()-11+i,1);
-    labels.push(d.toLocaleDateString('tr-TR',{month:'short',year:'2-digit'}));
-    const t=i/11;
-    // Slight S-curve
-    const eased=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-    const noise=(Math.random()-0.5)*0.4;
-    pts.push(parseFloat((startRate+(base-startRate)*eased+noise).toFixed(2)));
-  }
-  pts[11]=parseFloat(base.toFixed(2));
-  drawChart(labels,pts);
+  // Historical USD/TRY rates (Approximate mid-market rates for the last 12 months ending May 2026)
+  const labels = ['Haz 25','Tem 25','Ağu 25','Eyl 25','Eki 25','Kas 25','Ara 25','Oca 26','Şub 26','Mar 26','Nis 26','May 26'];
+  const pts = [36.20, 37.10, 38.50, 39.40, 40.20, 41.50, 42.10, 43.30, 43.90, 44.50, 45.10, parseFloat(usdRate.toFixed(2))];
+  drawChart(labels, pts);
 }
 
 function drawChart(labels,data){
