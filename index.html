@@ -114,9 +114,6 @@
   .vac-days { font-family:'Playfair Display',serif; font-size:22px; font-weight:900; color:var(--gold-light); }
   .vac-days-label { font-size:9px; color:var(--text-dim); }
   .vac-cost { font-size:10px; color:var(--text-dim); margin-top:4px; }
-  .vac-input-group { margin-top:8px; display:flex; align-items:center; gap:4px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:5px; padding:2px 5px; }
-  .vac-input-group span { font-size:9px; color:var(--text-dim); }
-  .vac-input-group input { width:100%; background:transparent; border:none; color:var(--gold-light); font-size:11px; font-weight:600; text-align:right; outline:none; }
 
   .car-wrap { padding:12px; }
   .car-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
@@ -365,10 +362,6 @@
           <div class="vac-name">İtalya (Roma)</div>
           <div class="vac-days" id="italy-days">—</div>
           <div class="vac-days-label">gün</div>
-          <div class="vac-input-group">
-            <span>$/gün</span>
-            <input type="number" id="italy-price" value="100" min="0">
-          </div>
           <div class="vac-cost" id="italy-cost-label">~₺0/gün</div>
         </div>
         <div class="vac-card">
@@ -376,11 +369,7 @@
           <div class="vac-name">Afganistan (Kabil)</div>
           <div class="vac-days" id="afghan-days">—</div>
           <div class="vac-days-label">gün</div>
-          <div class="vac-input-group">
-            <span>₺/gün</span>
-            <input type="number" id="afghan-price" value="450" min="0">
-          </div>
-          <div class="vac-cost">Kişi başı günlük</div>
+          <div class="vac-cost" id="afghan-cost-label">~₺450/gün</div>
         </div>
       </div>
       <div style="padding:0 12px 10px;font-size:9px;color:var(--text-dim);line-height:1.5">* Konaklama + yemek + ulaşım tahminine göre.</div>
@@ -432,12 +421,22 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
+/**
+ * KOLAY DEĞİŞTİRİLEBİLİR AYARLAR
+ */
+const CONFIG = {
+  vacation: {
+    italyUsd: 100,      // İtalya kişi başı günlük USD
+    afghanTry: 450      // Afganistan kişi başı günlük TRY
+  }
+};
+
 let childCount=0, usdRate=38.5, marketChart=null, currentAsset='usd';
 const COLORS=['#c9a84c','#3498db','#e67e22','#9b59b6','#1abc9c','#e74c3c','#f39c12','#2ecc71','#e91e63','#00bcd4','#ff5722','#8bc34a'];
 
 const MARKET_DATA = {
-  labels: ['Haz 24','Tem 24','Ağu 24','Eyl 24','Eki 24','Kas 24','Ara 24','Oca 25','Şub 25','Mar 25','Nis 25','May 25'],
-  usd: { title: 'USD/TRY Kuru', color: '#c9a84c', unit: '₺', pts: [32.50, 33.10, 34.00, 34.20, 34.50, 34.80, 35.20, 35.80, 36.50, 37.20, 38.10, 0] },
+  labels: ['Haz 25','Tem 25','Ağu 25','Eyl 25','Eki 25','Kas 25','Ara 25','Oca 26','Şub 26','Mar 26','Nis 26','May 26'],
+  usd: { title: 'USD/TRY Kuru', color: '#c9a84c', unit: '₺', pts: [36.20, 37.10, 38.50, 39.40, 40.20, 41.50, 42.10, 43.30, 43.90, 44.50, 45.10, 0] },
   bist: { title: 'BIST100 Endeksi', color: '#3498db', unit: '', pts: [10500, 11200, 10800, 11500, 12200, 11900, 12800, 13500, 14200, 13800, 14500, 15200] },
   gold: { title: 'Gram Altın (TRY)', color: '#f1c40f', unit: '₺', pts: [2450, 2520, 2680, 2750, 2820, 2950, 3050, 3180, 3250, 3400, 3550, 3700] },
   silver: { title: 'Gram Gümüş (TRY)', color: '#bdc3c7', unit: '₺', pts: [30.50, 32.10, 34.50, 33.80, 35.20, 37.80, 39.10, 41.50, 42.80, 44.20, 46.50, 48.00] }
@@ -486,13 +485,14 @@ function updateFun(balance){
   const b=Math.max(0,balance);
   // Vacation
   const vPeople = parseFloat(document.getElementById('vac-people').value)||1;
-  const italyUsd = parseFloat(document.getElementById('italy-price').value)||0;
-  const afghanTry = parseFloat(document.getElementById('afghan-price').value)||0;
+  const italyUsd = CONFIG.vacation.italyUsd;
+  const afghanTry = CONFIG.vacation.afghanTry;
 
   const italyDaily = Math.round(italyUsd * usdRate);
   const afghanDaily = afghanTry;
 
   document.getElementById('italy-cost-label').textContent = `~${fmt(italyDaily)}/kişi`;
+  document.getElementById('afghan-cost-label').textContent = `~${fmt(afghanDaily)}/gün`;
   document.getElementById('italy-days').textContent = (b > 0) ? Math.floor(b / (italyDaily * vPeople)) : '—';
   document.getElementById('afghan-days').textContent = (b > 0) ? Math.floor(b / (afghanDaily * vPeople)) : '—';
   // Cars
@@ -548,7 +548,7 @@ const cps=document.getElementById('child-per-slider'),cpv=document.getElementByI
 cps.addEventListener('input',()=>{ cpv.textContent=fmt(cps.value); ctd.textContent=fmt(cps.value*childCount); update(); });
 document.getElementById('child-plus').addEventListener('click',()=>{ childCount=Math.min(childCount+1,10); document.getElementById('child-count').textContent=childCount; document.getElementById('child-expense-wrap').style.display=childCount>0?'block':'none'; cpv.textContent=fmt(cps.value); ctd.textContent=fmt(cps.value*childCount); update(); });
 document.getElementById('child-minus').addEventListener('click',()=>{ childCount=Math.max(childCount-1,0); document.getElementById('child-count').textContent=childCount; document.getElementById('child-expense-wrap').style.display=childCount>0?'block':'none'; ctd.textContent=fmt(cps.value*childCount); update(); });
-document.querySelectorAll('.fixed-item,#income,#vac-people,#italy-price,#afghan-price').forEach(i=>i.addEventListener('input',update));
+document.querySelectorAll('.fixed-item,#income,#vac-people').forEach(i=>i.addEventListener('input',update));
 
 // USD
 async function loadUSD(){
