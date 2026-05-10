@@ -397,8 +397,8 @@
         <div class="summary-card-sub">Net bakiye ile kaç adet?</div>
       </div>
       <div class="hb-grid">
-        <div class="hb-card"><div class="hb-emoji">🏪</div><div class="hb-title">Big Mac</div><div class="hb-val" id="hb-bigmac">—</div><div class="hb-sub">~₺180/adet</div></div>
-        <div class="hb-card"><div class="hb-emoji">👑</div><div class="hb-title">Burger King</div><div class="hb-val" id="hb-bk">—</div><div class="hb-sub">~₺200/adet</div></div>
+        <div class="hb-card"><div class="hb-emoji">🏪</div><div class="hb-title">Big Mac</div><div class="hb-val" id="hb-bigmac">—</div><div class="hb-sub">~₺380/adet</div></div>
+        <div class="hb-card"><div class="hb-emoji">👑</div><div class="hb-title">Kajun Corner</div><div class="hb-val" id="hb-bk">—</div><div class="hb-sub">~₺440/adet</div></div>
       </div>
     </div>
 
@@ -500,7 +500,7 @@ function updateFun(balance){
     document.getElementById(c.id+'-months').textContent=b>0?Math.ceil(c.p/b):'∞';
   });
   // Burgers
-  [{id:'hb-bigmac',p:180},{id:'hb-bk',p:200}].forEach(h=>{
+  [{id:'hb-bigmac',p:380},{id:'hb-bk',p:440}].forEach(h=>{
     document.getElementById(h.id).textContent=b>0?Math.floor(b/h.p).toLocaleString('tr-TR')+' 🍔':'—';
   });
 }
