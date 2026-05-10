@@ -311,6 +311,7 @@
       <div class="balance-display">
         <div class="balance-label">Net Bakiye</div>
         <div class="balance-amount zero" id="balance-amount">₺0</div>
+        <div id="balance-usd" style="font-size:14px; font-weight:700; margin-bottom:4px; opacity:0.8;">$0</div>
         <div class="balance-note" id="balance-note">—</div>
       </div>
     </div>
@@ -339,19 +340,26 @@
         <div class="summary-card-title">✈️ Tatil Hesabı</div>
         <div class="summary-card-sub">Net bakiye ile kaç gün tatil?</div>
       </div>
-      <div style="padding:12px; display:flex; flex-direction:column; gap:10px;">
-        <div class="row-input-wrap" style="width:100%; justify-content:space-between;">
-          <span style="font-size:11px; color:var(--text-muted);">Kişi Sayısı</span>
+      <div style="padding:12px 12px 0;">
+        <div class="row-input-wrap" style="width:100%; justify-content:space-between; margin-bottom:10px;">
+          <span style="font-size:11px; color:var(--text-muted);">Tatile Gidecek Kişi Sayısı</span>
           <input type="number" id="vac-people" value="1" min="1" style="width:40px;">
         </div>
-        <div class="row-input-wrap" style="width:100%; justify-content:space-between;">
-          <span style="font-size:11px; color:var(--text-muted);">Günlük/Kişi ₺</span>
-          <input type="number" id="vac-cost" value="2000" min="0" step="100" style="width:70px;">
-        </div>
-        <div class="vac-card" style="width:100%;">
-          <div class="vac-name">Tahmini Tatil Süresi</div>
-          <div class="vac-days" id="vac-days">—</div>
+      </div>
+      <div class="vacation-grid">
+        <div class="vac-card">
+          <div class="vac-flag">🇮🇹</div>
+          <div class="vac-name">İtalya (Roma)</div>
+          <div class="vac-days" id="italy-days">—</div>
           <div class="vac-days-label">gün</div>
+          <div class="vac-cost" id="italy-cost-label">~₺0/gün</div>
+        </div>
+        <div class="vac-card">
+          <div class="vac-flag">🇦🇫</div>
+          <div class="vac-name">Afganistan (Kabil)</div>
+          <div class="vac-days" id="afghan-days">—</div>
+          <div class="vac-days-label">gün</div>
+          <div class="vac-cost">~₺450/gün</div>
         </div>
       </div>
       <div style="padding:0 12px 10px;font-size:9px;color:var(--text-dim);line-height:1.5">* Konaklama + yemek + ulaşım tahminine göre.</div>
@@ -449,9 +457,12 @@ function updateFun(balance){
   const b=Math.max(0,balance);
   // Vacation
   const vPeople = parseFloat(document.getElementById('vac-people').value)||1;
-  const vCost = parseFloat(document.getElementById('vac-cost').value)||0;
-  const vTotalDaily = vPeople * vCost;
-  document.getElementById('vac-days').textContent = (b>0 && vTotalDaily>0) ? Math.floor(b/vTotalDaily) : '—';
+  const italyDaily = Math.round(100 * usdRate); // $100 per person
+  const afghanDaily = 450; // 450 TL per person
+
+  document.getElementById('italy-cost-label').textContent = `~${fmt(italyDaily)}/kişi`;
+  document.getElementById('italy-days').textContent = (b > 0) ? Math.floor(b / (italyDaily * vPeople)) : '—';
+  document.getElementById('afghan-days').textContent = (b > 0) ? Math.floor(b / (afghanDaily * vPeople)) : '—';
   // Cars
   [{id:'car3',p:2200000},{id:'car4',p:5500000}].forEach(c=>{
     document.getElementById(c.id+'-months').textContent=b>0?Math.ceil(c.p/b):'∞';
@@ -466,9 +477,13 @@ function update(){
   const income=getIncome(), fixed=getFixed(), variable=getVar(), total=fixed+variable, balance=income-total;
   const pct=income>0?Math.min((total/income)*100,100):0;
 
-  // USD Income
+  // USD calculations
   const incUsd = usdRate>0 ? income/usdRate : 0;
   document.getElementById('income-usd').textContent = '$' + incUsd.toLocaleString('en-US', {maximumFractionDigits:2});
+  const balUsd = usdRate>0 ? balance/usdRate : 0;
+  const balUsdEl = document.getElementById('balance-usd');
+  balUsdEl.textContent = '$' + Math.abs(balUsd).toLocaleString('en-US', {maximumFractionDigits:2});
+  balUsdEl.style.color = balance>0 ? 'var(--green-light)' : balance<0 ? 'var(--red-light)' : 'var(--gold-light)';
 
   document.getElementById('fixed-total').textContent=fmt(fixed);
   document.getElementById('variable-total').textContent=fmt(variable);
@@ -501,7 +516,7 @@ const cps=document.getElementById('child-per-slider'),cpv=document.getElementByI
 cps.addEventListener('input',()=>{ cpv.textContent=fmt(cps.value); ctd.textContent=fmt(cps.value*childCount); update(); });
 document.getElementById('child-plus').addEventListener('click',()=>{ childCount=Math.min(childCount+1,10); document.getElementById('child-count').textContent=childCount; document.getElementById('child-expense-wrap').style.display=childCount>0?'block':'none'; cpv.textContent=fmt(cps.value); ctd.textContent=fmt(cps.value*childCount); update(); });
 document.getElementById('child-minus').addEventListener('click',()=>{ childCount=Math.max(childCount-1,0); document.getElementById('child-count').textContent=childCount; document.getElementById('child-expense-wrap').style.display=childCount>0?'block':'none'; ctd.textContent=fmt(cps.value*childCount); update(); });
-document.querySelectorAll('.fixed-item,#income,#vac-people,#vac-cost').forEach(i=>i.addEventListener('input',update));
+document.querySelectorAll('.fixed-item,#income,#vac-people').forEach(i=>i.addEventListener('input',update));
 
 // USD
 function loadUSD(){
@@ -517,23 +532,10 @@ function loadUSD(){
 }
 
 function buildChart(){
-  // Approximate 12-month USD/TRY trajectory ending near current rate
-  const now=new Date();
-  const labels=[], base=usdRate;
-  // Build smooth curve ending at current rate
-  const startRate=base*0.84; // ~16% lower 12 months ago (reasonable TRY depreciation)
-  const pts=[];
-  for(let i=0;i<12;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()-11+i,1);
-    labels.push(d.toLocaleDateString('tr-TR',{month:'short',year:'2-digit'}));
-    const t=i/11;
-    // Slight S-curve
-    const eased=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-    const noise=(Math.random()-0.5)*0.4;
-    pts.push(parseFloat((startRate+(base-startRate)*eased+noise).toFixed(2)));
-  }
-  pts[11]=parseFloat(base.toFixed(2));
-  drawChart(labels,pts);
+  // Historical USD/TRY rates (Approximate mid-market rates for the last 12 months as of May 2024)
+  const labels = ['Haz 23','Tem 23','Ağu 23','Eyl 23','Eki 23','Kas 23','Ara 23','Oca 24','Şub 24','Mar 24','Nis 24','May 24'];
+  const pts = [23.63, 26.93, 26.71, 27.41, 28.26, 28.87, 29.70, 30.34, 31.21, 32.39, 32.45, parseFloat(usdRate.toFixed(2))];
+  drawChart(labels, pts);
 }
 
 function drawChart(labels,data){
