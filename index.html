@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ev Bilançosu</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0c; --surface: #1a1916; --surface2: #222118; --border: #2e2c26;
+    --gold: #c9a84c; --gold-light: #e8c97a; --red: #c0392b; --red-light: #e74c3c;
+    --green: #27ae60; --green-light: #2ecc71; --text: #f0ebe0;
+    --text-muted: #8a8472; --text-dim: #5a5748; --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; padding:0 0 80px; }
+
+  header { background:linear-gradient(135deg,#1a1916,#0f0e0c); border-bottom:1px solid var(--border); padding:28px 32px 22px; position:relative; overflow:hidden; }
+  header::before { content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; background:radial-gradient(circle,rgba(201,168,76,.12) 0%,transparent 70%); border-radius:50%; }
+  .header-inner { max-width:1200px; margin:0 auto; position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+  .header-tag { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--gold); margin-bottom:6px; font-weight:500; }
+  header h1 { font-family:'Playfair Display',serif; font-size:clamp(22px,4vw,40px); font-weight:900; line-height:1.1; }
+  header h1 span { color:var(--gold); }
+  header p { margin-top:6px; color:var(--text-muted); font-size:12px; }
+
+  .dollar-ticker { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px 18px; min-width:200px; text-align:center; }
+  .ticker-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); margin-bottom:3px; }
+  .ticker-rate { font-family:'Playfair Display',serif; font-size:24px; font-weight:900; color:var(--gold); }
+  .ticker-change { font-size:11px; font-weight:600; margin-top:2px; }
+  .ticker-change.up { color:var(--green-light); }
+  .ticker-change.down { color:var(--red-light); }
+  .ticker-sub { font-size:10px; color:var(--text-dim); margin-top:2px; }
+
+  .container { max-width:1200px; margin:0 auto; padding:24px 18px 0; display:grid; grid-template-columns:1fr 350px; gap:22px; align-items:start; }
+  @media(max-width:860px){ .container{grid-template-columns:1fr;} }
+
+  .section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:16px; }
+  .section-header { display:flex; align-items:center; gap:10px; padding:13px 18px; border-bottom:1px solid var(--border); background:var(--surface2); }
+  .section-icon { width:30px; height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .icon-gold { background:rgba(201,168,76,.15); }
+  .icon-blue { background:rgba(52,152,219,.15); }
+  .section-title { font-family:'Playfair Display',serif; font-size:13px; font-weight:700; flex:1; }
+  .section-total { font-size:11px; font-weight:600; color:var(--gold-light); background:rgba(201,168,76,.1); padding:3px 8px; border-radius:20px; }
+
+  .income-block { padding:18px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px; }
+  .income-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--gold); margin-bottom:7px; font-weight:500; }
+  .income-input-wrap { display:flex; align-items:center; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:3px 11px; gap:6px; }
+  .income-input-wrap:focus-within { border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,168,76,.1); }
+  .currency { color:var(--gold); font-weight:700; font-size:16px; }
+  .income-input-wrap input { flex:1; background:transparent; border:none; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:20px; font-weight:600; padding:8px 0; }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; }
+
+  .sub-label { padding:7px 18px 2px; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); }
+  .divider { height:1px; background:var(--border); }
+
+  .row { display:flex; align-items:center; gap:9px; padding:10px 18px; border-bottom:1px solid rgba(46,44,38,.5); transition:background .15s; }
+  .row:last-child { border-bottom:none; }
+  .row:hover { background:rgba(255,255,255,.02); }
+  .row-icon { font-size:14px; width:20px; text-align:center; flex-shrink:0; }
+  .row-label { flex:1; font-size:12.5px; }
+  .row-label small { display:block; font-size:10px; color:var(--text-dim); margin-top:1px; }
+  .row-input-wrap { display:flex; align-items:center; gap:4px; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:5px 8px; min-width:112px; }
+  .row-input-wrap:focus-within { border-color:var(--gold); box-shadow:0 0 0 2px rgba(201,168,76,.08); }
+  .row-currency { font-size:10px; color:var(--text-dim); }
+  .row-input-wrap input { width:68px; background:transparent; border:none; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:12.5px; font-weight:500; text-align:right; }
+
+  .child-control { display:flex; align-items:center; gap:10px; padding:12px 18px; border-bottom:1px solid var(--border); background:rgba(201,168,76,.04); }
+  .child-label { flex:1; font-size:12.5px; color:var(--text-muted); }
+  .child-btn { width:26px; height:26px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s; }
+  .child-btn:hover { background:var(--gold); border-color:var(--gold); color:#000; }
+  .child-count { width:26px; text-align:center; font-size:14px; font-weight:700; color:var(--gold-light); }
+
+  .slider-wrap { padding:9px 18px 11px; }
+  .slider-row { display:flex; align-items:center; gap:7px; margin-bottom:5px; }
+  .slider-emoji { font-size:13px; width:20px; text-align:center; }
+  .slider-name { flex:1; font-size:12.5px; }
+  .slider-val { font-size:12.5px; font-weight:600; color:var(--gold-light); min-width:70px; text-align:right; }
+  input[type=range] { -webkit-appearance:none; height:4px; border-radius:2px; background:var(--border); outline:none; cursor:pointer; width:calc(100% - 27px); margin-left:27px; margin-bottom:3px; display:block; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--gold); cursor:pointer; border:2px solid var(--bg); box-shadow:0 0 5px rgba(201,168,76,.4); }
+
+  .sidebar { position:sticky; top:18px; }
+
+  .summary-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:14px; }
+  .summary-card-header { padding:12px 18px 10px; border-bottom:1px solid var(--border); background:var(--surface2); }
+  .summary-card-title { font-family:'Playfair Display',serif; font-size:13px; font-weight:700; }
+  .summary-card-sub { font-size:9px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-top:1px; }
+
+  .summary-line { display:flex; justify-content:space-between; align-items:center; padding:9px 18px; border-bottom:1px solid rgba(46,44,38,.5); font-size:12.5px; }
+  .summary-line:last-child { border-bottom:none; }
+  .summary-line .lbl { color:var(--text-muted); }
+  .summary-line .val { font-weight:600; }
+
+  .balance-display { padding:16px 18px; text-align:center; border-top:1px solid var(--border); background:var(--surface2); }
+  .balance-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); margin-bottom:4px; }
+  .balance-amount { font-family:'Playfair Display',serif; font-size:28px; font-weight:900; transition:color .3s; }
+  .balance-amount.positive { color:var(--green-light); }
+  .balance-amount.negative { color:var(--red-light); }
+  .balance-amount.zero { color:var(--gold-light); }
+  .balance-note { margin-top:3px; font-size:11px; color:var(--text-dim); }
+
+  .status-bar { margin:0 18px 12px; border-radius:8px; overflow:hidden; background:var(--border); height:8px; }
+  .status-bar-inner { height:100%; border-radius:8px; transition:width .5s cubic-bezier(.4,0,.2,1),background .3s; }
+
+  .alert { margin:0 18px 12px; padding:9px 11px; border-radius:8px; font-size:11.5px; line-height:1.5; display:none; }
+  .alert.show { display:block; }
+  .alert-warn { background:rgba(192,57,43,.15); border:1px solid rgba(192,57,43,.3); color:#e88; }
+  .alert-ok { background:rgba(39,174,96,.12); border:1px solid rgba(39,174,96,.25); color:#7dce9f; }
+
+  /* FUN CARDS */
+  .vacation-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; padding:12px; }
+  .vac-card { background:var(--surface2); border:1px solid var(--border); border-radius:9px; padding:12px 10px; text-align:center; }
+  .vac-flag { font-size:22px; margin-bottom:3px; }
+  .vac-name { font-size:10px; color:var(--text-muted); margin-bottom:5px; }
+  .vac-days { font-family:'Playfair Display',serif; font-size:22px; font-weight:900; color:var(--gold-light); }
+  .vac-days-label { font-size:9px; color:var(--text-dim); }
+  .vac-cost { font-size:10px; color:var(--text-dim); margin-top:4px; }
+
+  .car-wrap { padding:12px; }
+  .car-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .car-item { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 11px; }
+  .car-name { font-size:10px; color:var(--text-dim); margin-bottom:3px; }
+  .car-months { font-family:'Playfair Display',serif; font-size:17px; font-weight:700; color:var(--gold-light); }
+  .car-months-label { font-size:9px; color:var(--text-dim); }
+  .car-price { font-size:10px; color:var(--text-dim); margin-top:3px; }
+
+  .hb-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px; }
+  .hb-card { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:11px 10px; text-align:center; }
+  .hb-card.full { grid-column:1/-1; }
+  .hb-emoji { font-size:20px; margin-bottom:4px; }
+  .hb-title { font-size:9px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:5px; }
+  .hb-val { font-family:'Playfair Display',serif; font-size:17px; font-weight:700; color:var(--gold-light); }
+  .hb-sub { font-size:10px; color:var(--text-dim); margin-top:3px; }
+
+  .donut-wrap { padding:12px 18px; text-align:center; }
+  .donut-wrap svg { max-width:130px; }
+  .donut-legend { margin-top:9px; display:flex; flex-direction:column; gap:5px; text-align:left; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); }
+  .legend-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+  .legend-pct { margin-left:auto; font-weight:600; color:var(--text); font-size:11px; }
+
+  .usd-chart-wrap { padding:12px 18px 14px; }
+  .usd-chart-title { font-size:10px; color:var(--text-dim); margin-bottom:9px; }
+
+  .chart-selector { display:flex; gap:5px; padding:0 18px 10px; }
+  .chart-btn { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text-dim); font-size:10px; padding:6px 0; cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; }
+  .chart-btn.active { border-color:var(--gold); color:var(--gold-light); background:rgba(201,168,76,0.1); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="header-tag">✦ Finansal Planlama Aracı</div>
+      <h1>Ev <span>Bilançosu</span></h1>
+      <p>Gelir ve giderlerinizi girin — her şey anlık hesaplanır.</p>
+    </div>
+    <div class="dollar-ticker">
+      <div class="ticker-label">💵 USD / TRY Kur</div>
+      <input type="number" id="usd-rate" step="0.01" style="background:transparent; border:none; color:var(--gold); font-family:'Playfair Display',serif; font-size:24px; font-weight:900; text-align:center; width:100px; outline:none;">
+      <div class="ticker-change" id="usd-change"></div>
+      <div class="ticker-sub" id="usd-date">Sabitlendi</div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- LEFT -->
+  <div>
+
+    <div class="income-block">
+      <div class="income-label">✦ Aylık Net Gelir</div>
+      <div class="income-input-wrap">
+        <span class="currency">₺</span>
+        <input type="number" id="income" value="30000" min="0" step="500">
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-top:6px; display:flex; align-items:center; gap:6px;">
+        <span>USD Karşılığı:</span>
+        <span id="income-usd" style="color:var(--gold-light); font-weight:700;">$0</span>
+      </div>
+    </div>
+
+    <!-- SABİT -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon icon-gold">📌</div>
+        <div class="section-title">Sabit Giderler</div>
+        <div class="section-total" id="fixed-total">₺0</div>
+      </div>
+
+      <div class="sub-label">— Faturalar</div>
+      <div class="row">
+        <div class="row-icon">⚡</div>
+        <div class="row-label">Elektrik</div>
+        <div class="row-input-wrap"><span class="row-currency">₺</span><input type="number" class="fixed-item" data-key="elektrik" value="600" min="0" step="50"></div>
+      </div>
+      <div class="row">
+        <div class="row-icon">💧</div>
+        <div class="row-label">Su</div>
+        <div class="row-input-wrap"><span class="row-currency">₺</span><input type="number" class="fixed-item" data-key="su" value="300" min="0" step="50"></div>
+      </div>
+      <div class="row">
+        <div class="row-icon">🔥</div>
+        <div class="row-label">Doğalgaz</div>
+        <div class="row-input-wrap"><span class="row-currency">₺</span><input type="number" class="fixed-item" data-key="dogalgaz" value="800" min="0" step="50"></div>
+      </div>
+      <div class="row">
+        <div class="row-icon">🌐</div>
+        <div class="row-label">İnternet</div>
+        <div class="row-input-wrap"><span class="row-currency">₺</span><input type="number" class="fixed-item" data-key="internet" value="400" min="0" step="50"></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="sub-label">— Ulaşım</div>
+      <div class="row">
+        <div class="row-icon">🚌</div>
+        <div class="row-label">Toplu Taşıma<small>Metro, otobüs, taksi</small></div>
+        <div class="row-input-wrap"><span class="row-currency">₺</span><input type="number" class="fixed-item" data-key="toplu" value="800" min="0" step="50"></div>
+      </div>
+      <div class="row">
+        <div class="row-icon">⛽</div>
+        <div class="row-label">Akaryakıt<small>Benzin / motorin</small></div>
+        <div class="row-input-wrap"><span class="row-currency">₺</span><input type="number" class="fixed-item" data-key="akaryakit" value="2000" min="0" step="100"></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="sub-label">— Diğer</div>
+      <div class="row">
+        <div class="row-icon">🍽️</div>
+        <div class="row-label">Yemek (Dışarıda)<small>Restoran, sipariş</small></div>
+        <div class="row-input-wrap"><span class="row-currency">₺</span><input type="number" class="fixed-item" data-key="yemek" value="1500" min="0" step="50"></div>
+      </div>
+      <div class="row">
+        <div class="row-icon">🛡️</div>
+        <div class="row-label">Sigorta<small>Sağlık, araç, dask</small></div>
+        <div class="row-input-wrap"><span class="row-currency">₺</span><input type="number" class="fixed-item" data-key="sigorta" value="1800" min="0" step="50"></div>
+      </div>
+      <div class="row">
+        <div class="row-icon">🎓</div>
+        <div class="row-label">Eğitim Masrafı<small>Kurs, kitap, okul</small></div>
+        <div class="row-input-wrap"><span class="row-currency">₺</span><input type="number" class="fixed-item" data-key="egitim" value="800" min="0" step="50"></div>
+      </div>
+    </div>
+
+    <!-- DEĞİŞKEN -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔄</div>
+        <div class="section-title">Değişken Giderler</div>
+        <div class="section-total" id="variable-total">₺0</div>
+      </div>
+
+      <div class="child-control">
+        <div class="child-label">👶 Çocuk Sayısı</div>
+        <button class="child-btn" id="child-minus">−</button>
+        <div class="child-count" id="child-count">0</div>
+        <button class="child-btn" id="child-plus">+</button>
+      </div>
+      <div id="child-expense-wrap" style="display:none">
+        <div class="slider-wrap">
+          <div class="slider-row"><span class="slider-emoji">🍼</span><span class="slider-name">Çocuk başına masraf</span><span class="slider-val" id="child-per-val">₺0</span></div>
+          <input type="range" id="child-per-slider" min="500" max="10000" step="250" value="2500">
+          <div style="font-size:10px;color:var(--text-dim);margin-left:27px;">Toplam: <span id="child-total-display" style="color:var(--gold-light);font-weight:600">₺0</span></div>
+        </div>
+      </div>
+
+      <div class="slider-wrap" style="padding-top:13px">
+        <div class="slider-row"><span class="slider-emoji">🛒</span><span class="slider-name">Mutfak & Market</span><span class="slider-val" id="market-val">₺0</span></div>
+        <input type="range" id="market-slider" min="1000" max="20000" step="250" value="5000">
+      </div>
+      <div class="slider-wrap">
+        <div class="slider-row"><span class="slider-emoji">🏠</span><span class="slider-name">Ev Kirası <span style="font-size:9px;color:var(--text-dim)">(sahipseniz 0)</span></span><span class="slider-val" id="kira-val">₺0</span></div>
+        <input type="range" id="kira-slider" min="0" max="50000" step="500" value="0">
+      </div>
+      <div class="slider-wrap">
+        <div class="slider-row"><span class="slider-emoji">🎬</span><span class="slider-name">Eğlence & Sosyal</span><span class="slider-val" id="eglence-val">₺0</span></div>
+        <input type="range" id="eglence-slider" min="0" max="10000" step="250" value="1500">
+      </div>
+      <div class="slider-wrap">
+        <div class="slider-row"><span class="slider-emoji">👗</span><span class="slider-name">Giyim & Alışveriş</span><span class="slider-val" id="giyim-val">₺0</span></div>
+        <input type="range" id="giyim-slider" min="0" max="10000" step="250" value="1000">
+      </div>
+    </div>
+
+    <!-- PİYASA GRAFİĞİ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon icon-gold">📈</div>
+        <div class="section-title" id="chart-main-title">Piyasa Verileri — Son 12 Ay</div>
+      </div>
+      <div class="chart-selector">
+        <button class="chart-btn active" data-asset="usd">USD/TRY</button>
+        <button class="chart-btn" data-asset="bist">BIST100</button>
+        <button class="chart-btn" data-asset="gold">Altın</button>
+        <button class="chart-btn" data-asset="silver">Gümüş</button>
+      </div>
+      <div class="usd-chart-wrap">
+        <div class="usd-chart-title" id="chart-status">Veriler yükleniyor…</div>
+        <canvas id="marketChart" height="130"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- ÖZET -->
+    <div class="summary-card">
+      <div class="summary-card-header">
+        <div class="summary-card-title">Aylık Özet</div>
+        <div class="summary-card-sub">Bilanço Tablosu</div>
+      </div>
+      <div class="summary-line"><span class="lbl">📥 Aylık Gelir</span><span class="val" id="s-income">₺0</span></div>
+      <div class="summary-line"><span class="lbl">📌 Sabit Giderler</span><span class="val" id="s-fixed">₺0</span></div>
+      <div class="summary-line"><span class="lbl">🔄 Değişken Giderler</span><span class="val" id="s-variable">₺0</span></div>
+      <div class="summary-line" style="border-top:1px solid var(--border);background:var(--surface2)">
+        <span class="lbl" style="font-weight:600;color:var(--text)">📤 Toplam Gider</span>
+        <span class="val" id="s-total" style="color:var(--gold-light)">₺0</span>
+      </div>
+      <div class="balance-display">
+        <div class="balance-label">Net Bakiye</div>
+        <div class="balance-amount zero" id="balance-amount">₺0</div>
+        <div id="balance-usd" style="font-size:14px; font-weight:700; margin-bottom:4px; opacity:0.8;">$0</div>
+        <div class="balance-note" id="balance-note">—</div>
+      </div>
+    </div>
+
+    <!-- YÜKÜ -->
+    <div class="summary-card">
+      <div class="summary-card-header">
+        <div class="summary-card-title">Gider Yükü</div>
+        <div class="summary-card-sub">Gelirin yüzdesi</div>
+      </div>
+      <div style="padding:14px 18px 5px">
+        <div class="status-bar"><div class="status-bar-inner" id="expense-bar" style="width:0%;background:var(--green)"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:4px">
+          <span style="color:var(--text-dim)">%0</span>
+          <span id="expense-pct" style="color:var(--gold-light);font-weight:700">%0</span>
+          <span style="color:var(--text-dim)">%100</span>
+        </div>
+      </div>
+      <div class="alert alert-ok" id="alert-ok">✅ Harika! Giderleriniz makul sınırlar içinde.</div>
+      <div class="alert alert-warn" id="alert-warn">⚠️ Dikkat! Giderleriniz gelirinizi aşıyor veya %80 üzerinde.</div>
+    </div>
+
+    <!-- TATİL -->
+    <div class="summary-card">
+      <div class="summary-card-header">
+        <div class="summary-card-title">✈️ Tatil Hesabı</div>
+        <div class="summary-card-sub">Net bakiye ile kaç gün tatil?</div>
+      </div>
+      <div style="padding:12px 12px 0;">
+        <div class="row-input-wrap" style="width:100%; justify-content:space-between; margin-bottom:10px;">
+          <span style="font-size:11px; color:var(--text-muted);">Tatile Gidecek Kişi Sayısı</span>
+          <input type="number" id="vac-people" value="1" min="1" style="width:40px;">
+        </div>
+      </div>
+      <div class="vacation-grid">
+        <div class="vac-card">
+          <div class="vac-flag">🇮🇹</div>
+          <div class="vac-name">İtalya (Roma)</div>
+          <div class="vac-days" id="italy-days">—</div>
+          <div class="vac-days-label">gün</div>
+          <div class="vac-cost" id="italy-cost-label">~₺0/gün</div>
+        </div>
+        <div class="vac-card">
+          <div class="vac-flag">🇦🇫</div>
+          <div class="vac-name">Afganistan (Kabil)</div>
+          <div class="vac-days" id="afghan-days">—</div>
+          <div class="vac-days-label">gün</div>
+          <div class="vac-cost" id="afghan-cost-label">~₺450/gün</div>
+        </div>
+      </div>
+      <div style="padding:0 12px 10px;font-size:9px;color:var(--text-dim);line-height:1.5">* Konaklama + yemek + ulaşım tahminine göre.</div>
+    </div>
+
+    <!-- ARABA -->
+    <div class="summary-card">
+      <div class="summary-card-header">
+        <div class="summary-card-title">🚗 Araba Biriktirme</div>
+        <div class="summary-card-sub">Net bakiye ile kaç ayda?</div>
+      </div>
+      <div class="car-wrap">
+        <div class="car-grid">
+          <div class="car-item"><div class="car-name">Toyota Corolla</div><div class="car-months" id="car3-months">—</div><div class="car-months-label">ay</div><div class="car-price">~₺2.200.000</div></div>
+          <div class="car-item"><div class="car-name">BMW 3 Serisi</div><div class="car-months" id="car4-months">—</div><div class="car-months-label">ay</div><div class="car-price">~₺5.500.000</div></div>
+        </div>
+        <div style="margin-top:7px;font-size:9px;color:var(--text-dim);">* Pozitif net bakiyeye göre. Faiz dahil değil.</div>
+      </div>
+    </div>
+
+    <!-- HAMBURGER -->
+    <div class="summary-card">
+      <div class="summary-card-header">
+        <div class="summary-card-title">🍔 Hamburger Endeksi</div>
+        <div class="summary-card-sub">Net bakiye ile kaç adet?</div>
+      </div>
+      <div class="hb-grid">
+        <div class="hb-card"><div class="hb-emoji">🏪</div><div class="hb-title">Big Mac</div><div class="hb-val" id="hb-bigmac">—</div><div class="hb-sub">~₺180/adet</div></div>
+        <div class="hb-card"><div class="hb-emoji">👑</div><div class="hb-title">Burger King</div><div class="hb-val" id="hb-bk">—</div><div class="hb-sub">~₺200/adet</div></div>
+      </div>
+    </div>
+
+    <!-- DONUT -->
+    <div class="summary-card">
+      <div class="summary-card-header">
+        <div class="summary-card-title">Gider Dağılımı</div>
+        <div class="summary-card-sub">Kategorilere göre</div>
+      </div>
+      <div class="donut-wrap">
+        <svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg" id="donut-svg">
+          <circle cx="65" cy="65" r="45" fill="none" stroke="var(--border)" stroke-width="18"/>
+        </svg>
+        <div class="donut-legend" id="donut-legend"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+/** 
+ * KOLAY DEĞİŞTİRİLEBİLİR AYARLAR
+ */
+const CONFIG = {
+  vacation: {
+    italyUsd: 100,      // İtalya kişi başı günlük USD
+    afghanTry: 450      // Afganistan kişi başı günlük TRY
+  }
+};
+
+let childCount=0, usdRate=38.5, marketChart=null, currentAsset='usd';
+const COLORS=['#c9a84c','#3498db','#e67e22','#9b59b6','#1abc9c','#e74c3c','#f39c12','#2ecc71','#e91e63','#00bcd4','#ff5722','#8bc34a'];
+
+const MARKET_DATA = {
+  labels: ['Haziran 2025','Temmuz 2025','Ağustos 2025','Eylül 2025','Ekim 2025','Kasım 2025','Aralık 2025','Ocak 2026','Şubat 2026','Mart 2026','Nisan 2026','Mayıs 2026'],
+  usd: { title: 'USD/TRY Kuru', color: '#c9a84c', unit: '₺', pts: [36.20, 37.10, 38.50, 39.40, 40.20, 41.50, 42.10, 43.30, 43.90, 44.50, 45.10, 0] },
+  bist: { title: 'BIST100 Endeksi', color: '#3498db', unit: '', pts: [10500, 11200, 10800, 11500, 12200, 11900, 12800, 13500, 14200, 13800, 14500, 15200] },
+  gold: { title: 'Gram Altın (TRY)', color: '#f1c40f', unit: '₺', pts: [5100, 5350, 5600, 5820, 5950, 6180, 6300, 6450, 6580, 6650, 6750, 6800] },
+  silver: { title: 'Gram Gümüş (TRY)', color: '#bdc3c7', unit: '₺', pts: [82.50, 86.10, 91.50, 93.80, 96.20, 101.80, 104.10, 108.50, 111.80, 113.20, 115.50, 117.00] }
+};
+
+function fmt(n){ return '₺'+Math.round(n).toLocaleString('tr-TR'); }
+function getIncome(){ return parseFloat(document.getElementById('income').value)||0; }
+function getFixed(){ let t=0; document.querySelectorAll('.fixed-item').forEach(i=>t+=parseFloat(i.value)||0); return t; }
+function getVar(){
+  let t=0;
+  if(childCount>0) t+=( parseFloat(document.getElementById('child-per-slider').value)||0)*childCount;
+  ['market','kira','eglence','giyim'].forEach(k=>t+=parseFloat(document.getElementById(k+'-slider').value)||0);
+  return t;
+}
+function getCats(){
+  const m={elektrik:'Elektrik',su:'Su',dogalgaz:'Doğalgaz',internet:'İnternet',toplu:'Toplu T.',akaryakit:'Akaryakıt',yemek:'Yemek',sigorta:'Sigorta',egitim:'Eğitim'};
+  const cats=[];
+  document.querySelectorAll('.fixed-item').forEach(i=>{ const v=parseFloat(i.value)||0; if(v>0)cats.push({name:m[i.dataset.key]||i.dataset.key,val:v}); });
+  if(childCount>0){ const ct=(parseFloat(document.getElementById('child-per-slider').value)||0)*childCount; if(ct>0)cats.push({name:'Çocuk',val:ct}); }
+  [{id:'market-slider',name:'Market'},{id:'kira-slider',name:'Kira'},{id:'eglence-slider',name:'Eğlence'},{id:'giyim-slider',name:'Giyim'}].forEach(s=>{ const v=parseFloat(document.getElementById(s.id).value)||0; if(v>0)cats.push({name:s.name,val:v}); });
+  return cats;
+}
+
+function drawDonut(cats,total){
+  const svg=document.getElementById('donut-svg'), leg=document.getElementById('donut-legend');
+  leg.innerHTML='';
+  if(total===0){ svg.innerHTML='<circle cx="65" cy="65" r="45" fill="none" stroke="var(--border)" stroke-width="18"/><text x="65" y="69" text-anchor="middle" fill="var(--text-dim)" font-size="9" font-family="DM Sans">Veri yok</text>'; return; }
+  const r=45,cx=65,cy=65,circ=2*Math.PI*r;
+  svg.innerHTML='<circle cx="65" cy="65" r="45" fill="none" stroke="var(--border)" stroke-width="18"/>';
+  let off=0;
+  cats.forEach((cat,i)=>{
+    const pct=cat.val/total, dash=pct*circ, gap=circ-dash, color=COLORS[i%COLORS.length];
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('class','arc'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',r);
+    c.setAttribute('fill','none'); c.setAttribute('stroke',color); c.setAttribute('stroke-width','18');
+    c.setAttribute('stroke-dasharray',`${dash} ${gap}`); c.setAttribute('stroke-dashoffset',-off*circ);
+    c.style.transform=`rotate(-90deg)`; c.style.transformOrigin=`${cx}px ${cy}px`;
+    svg.appendChild(c); off+=pct;
+    const li=document.createElement('div'); li.className='legend-item';
+    li.innerHTML=`<div class="legend-dot" style="background:${color}"></div><span>${cat.name}</span><span class="legend-pct">${Math.round(pct*100)}%</span>`;
+    leg.appendChild(li);
+  });
+}
+
+function updateFun(balance){
+  const b=Math.max(0,balance);
+  // Vacation
+  const vPeople = parseFloat(document.getElementById('vac-people').value)||1;
+  const italyUsd = CONFIG.vacation.italyUsd;
+  const afghanTry = CONFIG.vacation.afghanTry;
+
+  const italyDaily = Math.round(italyUsd * usdRate); 
+  const afghanDaily = afghanTry;
+  
+  document.getElementById('italy-cost-label').textContent = `~${fmt(italyDaily)}/kişi`;
+  document.getElementById('afghan-cost-label').textContent = `~${fmt(afghanDaily)}/gün`;
+  document.getElementById('italy-days').textContent = (b > 0) ? Math.floor(b / (italyDaily * vPeople)) : '—';
+  document.getElementById('afghan-days').textContent = (b > 0) ? Math.floor(b / (afghanDaily * vPeople)) : '—';
+  // Cars
+  [{id:'car3',p:2200000},{id:'car4',p:5500000}].forEach(c=>{
+    document.getElementById(c.id+'-months').textContent=b>0?Math.ceil(c.p/b):'∞';
+  });
+  // Burgers
+  [{id:'hb-bigmac',p:180},{id:'hb-bk',p:200}].forEach(h=>{
+    document.getElementById(h.id).textContent=b>0?Math.floor(b/h.p).toLocaleString('tr-TR')+' 🍔':'—';
+  });
+}
+
+function update(){
+  const income=getIncome(), fixed=getFixed(), variable=getVar(), total=fixed+variable, balance=income-total;
+  const pct=income>0?Math.min((total/income)*100,100):0;
+
+  // USD calculations
+  const incUsd = usdRate>0 ? income/usdRate : 0;
+  document.getElementById('income-usd').textContent = '$' + incUsd.toLocaleString('en-US', {maximumFractionDigits:2});
+  const balUsd = usdRate>0 ? balance/usdRate : 0;
+  const balUsdEl = document.getElementById('balance-usd');
+  balUsdEl.textContent = '$' + Math.abs(balUsd).toLocaleString('en-US', {maximumFractionDigits:2});
+  balUsdEl.style.color = balance>0 ? 'var(--green-light)' : balance<0 ? 'var(--red-light)' : 'var(--gold-light)';
+
+  document.getElementById('fixed-total').textContent=fmt(fixed);
+  document.getElementById('variable-total').textContent=fmt(variable);
+  document.getElementById('s-income').textContent=fmt(income);
+  document.getElementById('s-fixed').textContent=fmt(fixed);
+  document.getElementById('s-variable').textContent=fmt(variable);
+  document.getElementById('s-total').textContent=fmt(total);
+  const bEl=document.getElementById('balance-amount');
+  bEl.textContent=fmt(Math.abs(balance));
+  bEl.className='balance-amount '+(balance>0?'positive':balance<0?'negative':'zero');
+  document.getElementById('balance-note').textContent=balance>0?`+${fmt(balance)} aylık tasarruf`:balance<0?`${fmt(Math.abs(balance))} açık`:'Gelir = Gider';
+  const bar=document.getElementById('expense-bar');
+  bar.style.width=pct+'%'; bar.style.background=pct>90?'var(--red)':pct>70?'#e67e22':'var(--green)';
+  document.getElementById('expense-pct').textContent='%'+Math.round(pct);
+  const warn=pct>=80||balance<0;
+  document.getElementById('alert-warn').classList.toggle('show',warn);
+  document.getElementById('alert-ok').classList.toggle('show',!warn&&income>0);
+  drawDonut(getCats(),total);
+  updateFun(balance);
+}
+
+// Sliders
+function initSlider(id,lid){ const s=document.getElementById(id),l=document.getElementById(lid); const r=()=>{ l.textContent=fmt(parseFloat(s.value)||0); update(); }; s.addEventListener('input',r); r(); }
+initSlider('market-slider','market-val');
+initSlider('kira-slider','kira-val');
+initSlider('eglence-slider','eglence-val');
+initSlider('giyim-slider','giyim-val');
+
+const cps=document.getElementById('child-per-slider'),cpv=document.getElementById('child-per-val'),ctd=document.getElementById('child-total-display');
+cps.addEventListener('input',()=>{ cpv.textContent=fmt(cps.value); ctd.textContent=fmt(cps.value*childCount); update(); });
+document.getElementById('child-plus').addEventListener('click',()=>{ childCount=Math.min(childCount+1,10); document.getElementById('child-count').textContent=childCount; document.getElementById('child-expense-wrap').style.display=childCount>0?'block':'none'; cpv.textContent=fmt(cps.value); ctd.textContent=fmt(cps.value*childCount); update(); });
+document.getElementById('child-minus').addEventListener('click',()=>{ childCount=Math.max(childCount-1,0); document.getElementById('child-count').textContent=childCount; document.getElementById('child-expense-wrap').style.display=childCount>0?'block':'none'; ctd.textContent=fmt(cps.value*childCount); update(); });
+document.querySelectorAll('.fixed-item,#income,#vac-people').forEach(i=>i.addEventListener('input',update));
+
+// USD
+async function loadUSD(){
+  try{
+    const res=await fetch('https://open.er-api.com/v6/latest/USD');
+    const data=await res.json();
+    if(data?.rates?.TRY){
+      usdRate=data.rates.TRY;
+      const el = document.getElementById('usd-rate');
+      el.value = usdRate.toFixed(2);
+      const d=new Date(data.time_last_update_utc);
+      document.getElementById('usd-date').textContent='Güncelleme: '+d.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
+      update();
+    }
+  }catch(e){ 
+    usdRate = 45.37;
+    document.getElementById('usd-rate').value = usdRate;
+    document.getElementById('usd-date').textContent='Tahmini (Mayıs 26)'; 
+  }
+  
+  const el = document.getElementById('usd-rate');
+  el.addEventListener('input', () => {
+    usdRate = parseFloat(el.value) || 0;
+    update();
+    buildChart();
+  });
+  buildChart();
+}
+
+function buildChart(){
+  const asset = MARKET_DATA[currentAsset];
+  if(currentAsset === 'usd') asset.pts[11] = parseFloat(usdRate.toFixed(2));
+  
+  document.getElementById('chart-status').textContent = `${asset.title} (Aylık kapanış tahmini)`;
+  document.getElementById('chart-main-title').textContent = `${asset.title} — Son 12 Ay`;
+  
+  drawChart(MARKET_DATA.labels, asset);
+}
+
+function drawChart(labels, asset){
+  const ctx=document.getElementById('marketChart').getContext('2d');
+  if(marketChart) marketChart.destroy();
+  
+  const color = asset.color;
+  const grad=ctx.createLinearGradient(0,0,0,130);
+  grad.addColorStop(0, color + '48');
+  grad.addColorStop(1, color + '05');
+  
+  marketChart=new Chart(ctx,{
+    type:'line',
+    data:{ 
+      labels, 
+      datasets:[{ 
+        label: asset.title, 
+        data: asset.pts, 
+        borderColor: color, 
+        backgroundColor: grad, 
+        borderWidth: 2, 
+        pointRadius: 3, 
+        pointBackgroundColor: color, 
+        pointBorderColor: '#0f0e0c', 
+        pointBorderWidth: 1.5, 
+        tension: 0.4, 
+        fill: true 
+      }] 
+    },
+    options:{
+      responsive:true,
+      interaction:{intersect:false,mode:'index'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{ 
+          backgroundColor:'#1a1916', 
+          borderColor:'#2e2c26', 
+          borderWidth:1, 
+          titleColor:'#8a8472', 
+          bodyColor: asset.color, 
+          callbacks:{ label:c=> `${asset.unit}${c.parsed.y.toLocaleString('tr-TR')}` } 
+        }
+      },
+      scales:{
+        x:{ grid:{color:'rgba(46,44,38,0.4)'}, ticks:{color:'#5a5748',font:{size:9}} },
+        y:{ grid:{color:'rgba(46,44,38,0.4)'}, ticks:{color:'#5a5748',font:{size:9},callback:v=> asset.unit+v.toLocaleString('tr-TR')} }
+      }
+    }
+  });
+}
+
+document.querySelectorAll('.chart-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chart-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentAsset = btn.dataset.asset;
+    buildChart();
+  });
+});
+
+update();
+loadUSD();
+</script>
+</body>
+</html>
